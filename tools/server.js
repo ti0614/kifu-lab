@@ -1,7 +1,8 @@
 // COOP/COEP 付きの静的サーバー（SharedArrayBuffer を使うため cross-origin isolation が必要）
-// usage: node poc/server.js [port]   → http://localhost:8080/poc/
+// usage: node tools/server.js [dir=_site] [port=8080]   → http://localhost:8080/
+// GitHub Pages と同じくヘッダーなしで確かめたいときは python3 -m http.server を使う。
 const http = require("http"), fs = require("fs"), path = require("path");
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(process.argv[2] || path.join(__dirname, "../_site"));
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".wasm": "application/wasm" };
 http.createServer((req, res) => {
   let p = path.join(ROOT, path.normalize(decodeURIComponent(req.url.split("?")[0])));
@@ -16,4 +17,4 @@ http.createServer((req, res) => {
     });
     res.end(data);
   });
-}).listen(+process.argv[2] || 8080);
+}).listen(+process.argv[3] || 8080);

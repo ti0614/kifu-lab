@@ -31,7 +31,7 @@
 - 本家の `wasm_pre.js` にあるコマンドキュー（`postMessage`）は動かなかったので、`ccall("usi_command", ...)` を直接呼んでいる。出力は `addMessageListener` で受け取る（`print` オプションは `wasm_pre.js` に上書きされる）。
 - 本家の WASM ビルドは **pthread 前提**で、Threads=1 でも SharedArrayBuffer が必要。つまり **COOP/COEP ヘッダーが必須**。
   - Cloudflare Pages：`_headers` で設定できる
-  - GitHub Pages：ヘッダーを設定できない → coi-serviceworker のような回避策が要る
+  - GitHub Pages：ヘッダーを設定できない → coi-serviceworker（Service Worker でヘッダーを付ける）で回避。ヘッダーなしのサーバーで動作確認済み。初回は1回リロードされる。Service Worker が使えない環境（プライベートウィンドウ等）では動かない
   - pthread なしのビルドは、エンジン本体が `std::thread` を前提にしているため改造が必要。今は手を付けない方がよい
 - サイズ（brotli 圧縮後）：wasm 約 197KB、mini の nn.bin 約 4.9MB、progress.bin 約 0.25MB。生のサイズは wasm 752KB、nn.bin 7.7MB。
 
@@ -59,15 +59,16 @@ scripts/build-wasm.sh          # vendor/ に emsdk 3.1.43 と YaneuraOu を入�
 scripts/fetch-eval-mini.sh     # eval/mini/ に nn.bin, progress.bin（SHA-256 確認付き）
 # micro は FANBOX から入手し、eval/micro/ に nn.bin と progress.bin を置く
 
-node poc/server.js             # COOP/COEP 付きサーバー → http://localhost:8080/poc/
+scripts/build-site.sh          # _site/ に公開用サイトを組み立て
+node tools/server.js           # COOP/COEP 付きサーバー → http://localhost:8080/
 node tools/bench.js wasm build/wasm-mini eval/mini 1 1000,3000    # Node で計測
-NODE_PATH=$(npm root -g) node tools/browser_test.js "http://localhost:8080/poc/?auto=1&threads=4"   # headless Chromium
+NODE_PATH=$(npm root -g) node tools/browser_test.js "http://localhost:8080/?auto=1&threads=4"   # headless Chromium
 ```
 
 ## 次にやること
 
-1. M1 Mac の Safari / Chrome で `poc/` を開いて NPS を測る（Safari の SharedArrayBuffer と WASM SIMD の確認も兼ねる）
+1. M1 Mac の Safari / Chrome で公開ページを開いて NPS を測る（Safari の SharedArrayBuffer と WASM SIMD の確認も兼ねる）
 2. micro を入手して、mini と速度・評価を比べる
 3. Web Worker の上に USI ラッパーを作る（KIF/CSA の解析 → `position` → `go movetime` を1手ずつ）
-4. ホスティング先を決める（COOP/COEP の都合で Cloudflare Pages が有力）
+4. ホスティング：まず GitHub Pages + coi-serviceworker で公開（`.github/workflows/pages.yml`）。問題が出たら Cloudflare Pages に移す
 5. ライセンス：WASM 版は GPLv3 なので、このリポジトリも GPLv3 で公開する方針を決める。評価関数の MIT 表示（eval/mini/LICENSE）を同梱する

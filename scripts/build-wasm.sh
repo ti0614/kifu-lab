@@ -34,11 +34,15 @@ fi
 source "$EMSDK/emsdk_env.sh" >/dev/null 2>&1
 
 # YaneuraOu
-if [ ! -d "$VENDOR/YaneuraOu" ]; then
-  git clone "$YANEURAOU_REPO" "$VENDOR/YaneuraOu"
+# 固定コミットだけを浅く取得する。
+if [ ! -d "$VENDOR/YaneuraOu/.git" ]; then
+  git init --quiet "$VENDOR/YaneuraOu"
+  git -C "$VENDOR/YaneuraOu" remote add origin "$YANEURAOU_REPO"
 fi
-git -C "$VENDOR/YaneuraOu" fetch --quiet origin "$YANEURAOU_COMMIT" || true
-git -C "$VENDOR/YaneuraOu" checkout --quiet "$YANEURAOU_COMMIT"
+if [ "$(git -C "$VENDOR/YaneuraOu" rev-parse -q --verify HEAD || true)" != "$YANEURAOU_COMMIT" ]; then
+  git -C "$VENDOR/YaneuraOu" fetch --quiet --depth 1 origin "$YANEURAOU_COMMIT"
+  git -C "$VENDOR/YaneuraOu" checkout --quiet --force FETCH_HEAD
+fi
 
 PYTHON=$(command -v python3 || command -v python)
 JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)

@@ -29,6 +29,11 @@
 
 → 調査結果は `docs/feasibility.md`。ビルドは `scripts/build-wasm.sh`（emsdk 3.1.43 に固定）。
 
+## 公開
+- GitHub Pages（https://ti0614.github.io/kifu-lab/）。main への push で `.github/workflows/pages.yml` がビルドして公開する
+- COOP/COEP は `site/coi-serviceworker.js` で付与している
+- ページのソースは `site/`。`scripts/build-site.sh` で `_site/` に組み立てる
+
 ## ライセンスの注意
 - やねうら王：**GPLv3** → WebAssembly版を配布するなら、ソースコードの公開が必要。サイトのリポジトリもGPLで公開するのが無難
 - つようら王11：**MIT** → 二次配布や商用利用も可。著作権表示は残す
