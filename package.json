@@ -1,0 +1,13 @@
+{
+  "name": "kifu-lab",
+  "private": true,
+  "scripts": {
+    "build:js": "esbuild site/src/main.js --bundle --format=esm --minify --sourcemap --target=es2020 --outfile=_site/app.js"
+  },
+  "dependencies": {
+    "tsshogi": "2.3.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
