@@ -26,7 +26,7 @@
 
 ## 3. Emscripten ビルドとブラウザでの動作
 
-- 環境は Linux x86_64（クラウドコンテナ）。M1 Mac ではまだ試していない（手順は下記）。
+- 環境は Linux x86_64（クラウドコンテナ）。macOS ではまだ試していない（手順は下記）。
 - **emsdk は 3.1.43 に固定**（本家と同じ）。最新の 6.0.13 でもビルドは通るが、`go` を送っても探索スレッドの出力が返らなかった。原因は調べていない。
 - 本家の `wasm_pre.js` にあるコマンドキュー（`postMessage`）は動かなかったので、`ccall("usi_command", ...)` を直接呼んでいる。出力は `addMessageListener` で受け取る（`print` オプションは `wasm_pre.js` に上書きされる）。
 - 本家の WASM ビルドは **pthread 前提**で、Threads=1 でも SharedArrayBuffer が必要。つまり **COOP/COEP ヘッダーが必須**。
@@ -52,7 +52,7 @@
 - 同じ条件ではネイティブ版と探索結果が完全に一致した（初期局面 depth16 のノード数 93715、読み筋も同じ）。WASM の SIMD 変換で評価値がずれていないことの確認になる。
 - 棋譜解析の目安：1手1秒・4スレッドで中盤は深さ15〜19。120手の棋譜なら約2分で終わる。
 
-## 再現手順（M1 Mac でも同じ）
+## 再現手順（macOS でも同じ）
 
 ```sh
 scripts/build-wasm.sh          # vendor/ に emsdk 3.1.43 と YaneuraOu を入れてビルド → build/wasm-{mini,micro}/
@@ -68,7 +68,7 @@ NODE_PATH=$(npm root -g) node tools/e2e.js http://localhost:8080/   # headless C
 
 ## 次にやること
 
-1. M1 Mac の Safari / Chrome で公開ページを開いて NPS を測る（Safari の SharedArrayBuffer と WASM SIMD の確認も兼ねる）
+1. Safari（macOS / iOS）で公開ページを開いて NPS を測る（Safari の SharedArrayBuffer と WASM SIMD の確認も兼ねる）
 2. micro を入手して、mini と速度・評価を比べる
 3. ~~USI ラッパーと解析画面~~ → 実装済み（`site/src/`）。エンジンはメインスレッドから呼んでいる（探索は pthread の Worker で動くので画面は固まらない）
 4. ホスティング：まず GitHub Pages + coi-serviceworker で公開（`.github/workflows/pages.yml`）。問題が出たら Cloudflare Pages に移す
