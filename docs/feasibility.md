@@ -59,16 +59,17 @@ scripts/build-wasm.sh          # vendor/ に emsdk 3.1.43 と YaneuraOu を入�
 scripts/fetch-eval-mini.sh     # eval/mini/ に nn.bin, progress.bin（SHA-256 確認付き）
 # micro は FANBOX から入手し、eval/micro/ に nn.bin と progress.bin を置く
 
+npm ci                         # tsshogi と esbuild
 scripts/build-site.sh          # _site/ に公開用サイトを組み立て
 node tools/server.js           # COOP/COEP 付きサーバー → http://localhost:8080/
 node tools/bench.js wasm build/wasm-mini eval/mini 1 1000,3000    # Node で計測
-NODE_PATH=$(npm root -g) node tools/browser_test.js "http://localhost:8080/?auto=1&threads=4"   # headless Chromium
+NODE_PATH=$(npm root -g) node tools/e2e.js http://localhost:8080/   # headless Chromium でサンプル棋譜を最後まで解析
 ```
 
 ## 次にやること
 
 1. M1 Mac の Safari / Chrome で公開ページを開いて NPS を測る（Safari の SharedArrayBuffer と WASM SIMD の確認も兼ねる）
 2. micro を入手して、mini と速度・評価を比べる
-3. Web Worker の上に USI ラッパーを作る（KIF/CSA の解析 → `position` → `go movetime` を1手ずつ）
+3. ~~USI ラッパーと解析画面~~ → 実装済み（`site/src/`）。エンジンはメインスレッドから呼んでいる（探索は pthread の Worker で動くので画面は固まらない）
 4. ホスティング：まず GitHub Pages + coi-serviceworker で公開（`.github/workflows/pages.yml`）。問題が出たら Cloudflare Pages に移す
 5. ライセンス：WASM 版は GPLv3 なので、このリポジトリも GPLv3 で公開する方針を決める。評価関数の MIT 表示（eval/mini/LICENSE）を同梱する

@@ -32,7 +32,9 @@
 ## 公開
 - GitHub Pages（https://ti0614.github.io/kifu-lab/）。main への push で `.github/workflows/pages.yml` がビルドして公開する
 - COOP/COEP は `site/coi-serviceworker.js` で付与している
-- ページのソースは `site/`。`scripts/build-site.sh` で `_site/` に組み立てる
+- ページのソースは `site/`（JS は `site/src/`、esbuild でバンドル）。`scripts/build-site.sh` で `_site/` に組み立てる
+- 棋譜の読み込みは tsshogi（MIT）。盤面は自前で描画（駒を動かさないので）
+- 動作確認：`NODE_PATH=$(npm root -g) node tools/e2e.js <URL>`（サンプル棋譜を最後まで解析する）
 
 ## ライセンスの注意
 - やねうら王：**GPLv3** → WebAssembly版を配布するなら、ソースコードの公開が必要。サイトのリポジトリもGPLで公開するのが無難
