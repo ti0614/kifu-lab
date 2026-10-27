@@ -1,0 +1,60 @@
+# やねうら王の WASM をビルドし、評価関数と一緒に GitHub Pages へ公開する。
+# 事前に Settings → Pages → Source を「GitHub Actions」にしておくこと。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # PR ではビルドだけ確認する（公開はしない）
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache emsdk and YaneuraOu
+        uses: actions/cache@v4
+        with:
+          path: |
+            vendor/emsdk
+            vendor/YaneuraOu
+          key: vendor-${{ hashFiles('scripts/build-wasm.sh') }}
+
+      - name: Build WASM engine (mini)
+        run: scripts/build-wasm.sh mini
+
+      - name: Fetch evaluation function (mini)
+        run: scripts/fetch-eval-mini.sh
+
+      - name: Assemble site
+        run: scripts/build-site.sh
+
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

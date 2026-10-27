@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- GitHub Pages は COOP/COEP ヘッダーを返せないので、Service Worker で付与する（初回は1回リロードされる） -->
+<script src="coi-serviceworker.js"></script>
+<title>kifu-lab</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 16px; max-width: 960px; }
+  label { display: inline-block; margin: 4px 12px 4px 0; }
+  input[type=text] { width: 100%; box-sizing: border-box; }
+  pre { background: #f4f4f4; padding: 8px; overflow-x: auto; font-size: 12px; }
+  #warn { color: #b00020; }
+  footer { margin-top: 24px; font-size: 12px; color: #555; }
+</style>
+<h1>kifu-lab（試験公開）</h1>
+<p>つようら王11mini + やねうら王（WebAssembly）がブラウザ内で動くかの確認ページです。解析はすべてお使いのブラウザ内で行います。</p>
+<p id="warn" hidden></p>
+<div>
+  <label>Threads <input id="threads" type="number" min="1" max="32"></label>
+  <label>思考時間(ms) <input id="movetime" type="number" value="3000" min="100" step="100"></label>
+</div>
+<div><label style="display:block">position <input id="position" type="text" value="position startpos"></label></div>
+<button id="load">エンジン読み込み（約8MB）</button>
+<button id="go" disabled>解析</button>
+<pre id="log"></pre>
+<footer>
+  <p>エンジン：<a href="https://github.com/yaneurao/YaneuraOu">やねうら王</a>（GPLv3）。
+    ビルドに使ったソースとビルド手順は <a href="https://github.com/ti0614/kifu-lab">ti0614/kifu-lab</a>（<code>scripts/build-wasm.sh</code>）を参照。</p>
+  <p>評価関数：つようら王11mini（MIT License, <a href="eval/mini/LICENSE">LICENSE</a>）。
+    COOP/COEP：<a href="https://github.com/gzuidhof/coi-serviceworker">coi-serviceworker</a>（MIT License）。</p>
+</footer>
+<script>
+// ?auto=1 を付けると読み込み → 解析まで自動で実行する（tools/browser_test.js 用）。
+const $ = (id) => document.getElementById(id);
+const log = (s) => { $("log").textContent += s + "\n"; };
+const warn = (s) => { $("warn").textContent = s; $("warn").hidden = false; };
+const params = new URLSearchParams(location.search);
+$("threads").value = params.get("threads") || Math.min(4, navigator.hardwareConcurrency || 1);
+if (params.has("movetime")) $("movetime").value = params.get("movetime");
+window.lines = [];
+let engine = null;
+
+const UNSUPPORTED = "このブラウザでは動きません（SharedArrayBuffer が使えません）。" +
+  "プライベートウィンドウやアプリ内ブラウザの場合は、通常の Chrome / Edge / Firefox / Safari で開いてください。";
+if (!self.crossOriginIsolated && !navigator.serviceWorker) warn(UNSUPPORTED);
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error(`load failed: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+async function load() {
+  if (typeof SharedArrayBuffer === "undefined") { warn(UNSUPPORTED); return; }
+  $("load").disabled = true;
+  const t0 = performance.now();
+  await loadScript("build/wasm-mini/yaneuraou.js");
+  const yo = await YaneuraOu({ locateFile: (f) => `build/wasm-mini/${f}` });
+  // wasm_pre.js が print を差し替えるので、出力は addMessageListener で受け取る。
+  yo.addMessageListener((s) => {
+    for (const l of s.split("\n")) if (l && !l.startsWith("option") && !l.startsWith("id ")) { lines.push(l); log(l); }
+  });
+  log(`# module init ${Math.round(performance.now() - t0)}ms`);
+  yo.FS.mkdir("/eval");
+  for (const f of ["nn.bin", "progress.bin"]) {
+    const res = await fetch(`eval/mini/${f}`);
+    if (!res.ok) throw new Error(`eval/mini/${f}: ${res.status}`);
+    yo.FS.writeFile(`/eval/${f}`, new Uint8Array(await res.arrayBuffer()));
+  }
+  log(`# eval files loaded ${Math.round(performance.now() - t0)}ms`);
+  // wasm_pre.js のコマンドキューは使わず、usi_command を直接呼ぶ。
+  engine = (c) => yo.ccall("usi_command", "number", ["string"], [c]);
+  for (const c of ["usi", "setoption name EvalDir value /eval", "setoption name FV_SCALE value 24",
+    `setoption name Threads value ${$("threads").value}`, "setoption name USI_Hash value 256",
+    "setoption name BookFile value no_book", "isready"]) engine(c);
+  $("go").disabled = false;
+}
+
+function go() {
+  engine("usinewgame");
+  engine($("position").value);
+  engine(`go movetime ${$("movetime").value}`);
+}
+
+$("load").onclick = () => load().catch((e) => log("ERROR " + e));
+$("go").onclick = go;
+if (params.get("auto") === "1" && self.crossOriginIsolated) load().then(go).catch((e) => log("ERROR " + e));
+</script>
+</html>
