@@ -72,4 +72,4 @@ NODE_PATH=$(npm root -g) node tools/e2e.js http://localhost:8080/   # headless C
 2. micro を入手して、mini と速度・評価を比べる
 3. ~~USI ラッパーと解析画面~~ → 実装済み（`site/src/`）。エンジンはメインスレッドから呼んでいる（探索は pthread の Worker で動くので画面は固まらない）
 4. ホスティング：まず GitHub Pages + coi-serviceworker で公開（`.github/workflows/pages.yml`）。問題が出たら Cloudflare Pages に移す
-5. ライセンス：WASM 版は GPLv3 なので、このリポジトリも GPLv3 で公開する方針を決める。評価関数の MIT 表示（eval/mini/LICENSE）を同梱する
+5. ~~ライセンス~~ → このリポジトリは GPLv3 にした。評価関数の MIT 表示（eval/mini/LICENSE）は公開サイトに同梱している
